@@ -3,6 +3,8 @@
 __pycache__/
 *.py[oc]
 build/
+outputs/
+unsloth_compiled_cache/
 dist/
 wheels/
 *.egg-info
