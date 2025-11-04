@@ -1,0 +1,17 @@
+# Python-generated files
+*.nemo
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+
+# anhnd ignore
+sentiment_score_logs/
+sentiment_score_results/
+excel_fpt_qc/
