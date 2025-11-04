@@ -6,6 +6,7 @@ build/
 outputs/
 unsloth_compiled_cache/
 dist/
+models/
 wheels/
 *.egg-info
 
