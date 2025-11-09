@@ -16,19 +16,26 @@ fi
 
 python train.py \
   --model_name "Qwen/Qwen3-0.6B" \
-  --dataset_path "./sample_dataset.jsonl" \
+  --dataset_path "./data/train.jsonl" \
+  --val_dataset_path "./data/val.jsonl" \
+  --test_dataset_path "./data/test.jsonl" \
+  --max_seq_length 4096 \
   --use_lora \
   --lora_r 16 \
   --lora_alpha 16 \
   --num_train_epochs 3 \
-  --per_device_train_batch_size 2 \
-  --gradient_accumulation_steps 4 \
+  --per_device_train_batch_size 8 \
+  --gradient_accumulation_steps 2 \
   --learning_rate 2e-4 \
+  --warmup_ratio 0.1 \
+  --lr_scheduler_type "cosine" \
   --output_dir "./outputs/hub_upload" \
+  --save_steps 100 \
   --save_model \
   --save_model_path "./models/for_hub" \
   --save_merged_16bit \
   --push_to_hub \
   --hub_model_id "$HF_MODEL_ID" \
   --hub_token "$HF_TOKEN" \
-  --test_after_training
+  --test_after_training \
+  --logging_steps 10

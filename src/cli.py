@@ -7,7 +7,7 @@ Supports both LoRA and Full Fine-tuning with OpenAI message format
 import argparse
 import sys
 
-from .dataset import load_data, prepare_dataset
+from .dataset import load_data, load_optional_data, prepare_dataset
 from .model import load_model_and_tokenizer, save_model
 from .trainer import create_training_args, train_model, test_model
 
@@ -85,13 +85,25 @@ def parse_args():
         "--dataset_path",
         type=str,
         required=True,
-        help="Path to dataset file (JSON/JSONL) or HuggingFace dataset name"
+        help="Path to training dataset file (JSON/JSONL) or HuggingFace dataset name"
+    )
+    data_group.add_argument(
+        "--val_dataset_path",
+        type=str,
+        default=None,
+        help="Path to validation dataset file (optional)"
+    )
+    data_group.add_argument(
+        "--test_dataset_path",
+        type=str,
+        default=None,
+        help="Path to test dataset file (optional)"
     )
     data_group.add_argument(
         "--dataset_split",
         type=str,
         default="train",
-        help="Dataset split to use"
+        help="Dataset split to use (for HuggingFace datasets)"
     )
     data_group.add_argument(
         "--dataset_text_field",
@@ -303,17 +315,47 @@ def main():
     print("=" * 50)
 
     try:
-        # 1. Load dataset
-        dataset = load_data(args.dataset_path, args.dataset_split)
+        # 1. Load datasets
+        train_dataset = load_data(args.dataset_path, args.dataset_split, dataset_name="train")
 
-        # 2. Prepare dataset
-        formatted_dataset = prepare_dataset(
-            dataset,
+        # Load optional validation dataset
+        val_dataset = None
+        if args.val_dataset_path:
+            val_dataset = load_optional_data(args.val_dataset_path, dataset_name="validation")
+
+        # Load optional test dataset
+        test_dataset = None
+        if args.test_dataset_path:
+            test_dataset = load_optional_data(args.test_dataset_path, dataset_name="test")
+
+        # 2. Prepare datasets
+        formatted_train_dataset = prepare_dataset(
+            train_dataset,
             model_name=args.model_name,
             text_field=args.dataset_text_field,
             system_prompt=args.system_prompt,
             chat_template=args.chat_template
         )
+
+        formatted_val_dataset = None
+        if val_dataset is not None:
+            formatted_val_dataset = prepare_dataset(
+                val_dataset,
+                model_name=args.model_name,
+                text_field=args.dataset_text_field,
+                system_prompt=args.system_prompt,
+                chat_template=args.chat_template
+            )
+
+        formatted_test_dataset = None
+        if test_dataset is not None:
+            formatted_test_dataset = prepare_dataset(
+                test_dataset,
+                model_name=args.model_name,
+                text_field=args.dataset_text_field,
+                system_prompt=args.system_prompt,
+                chat_template=args.chat_template
+            )
 
         # 3. Load model and tokenizer
         model, tokenizer = load_model_and_tokenizer(
@@ -355,19 +397,22 @@ def main():
         train_model(
             model,
             tokenizer,
-            formatted_dataset,
+            formatted_train_dataset,
             training_args,
             max_seq_length=args.max_seq_length,
-            packing=args.packing
+            packing=args.packing,
+            eval_dataset=formatted_val_dataset
         )
 
         # 6. Test
         if args.test_after_training:
+            # Use test dataset if available, otherwise use train dataset
+            test_data = formatted_test_dataset if formatted_test_dataset is not None else formatted_train_dataset
             test_model(
                 model,
                 tokenizer,
                 test_prompt=args.test_prompt,
-                dataset=formatted_dataset,
+                dataset=test_data,
                 max_new_tokens=args.max_new_tokens,
                 temperature=args.temperature,
                 top_p=args.top_p

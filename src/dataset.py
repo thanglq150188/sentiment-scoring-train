@@ -7,10 +7,19 @@ from typing import Dict, List
 from datasets import Dataset, load_dataset
 
 
-def load_data(dataset_path: str, dataset_split: str = "train") -> Dataset:
-    """Load dataset from file or HuggingFace"""
+def load_data(dataset_path: str, dataset_split: str = "train", dataset_name: str = "train") -> Dataset:
+    """Load dataset from file or HuggingFace
+
+    Args:
+        dataset_path: Path to dataset file or HuggingFace dataset name
+        dataset_split: Split to use if loading from HuggingFace
+        dataset_name: Name to display (e.g., "train", "validation", "test")
+
+    Returns:
+        Dataset object or None if file doesn't exist
+    """
     print(f"\n{'='*50}")
-    print("Loading Dataset")
+    print(f"Loading {dataset_name.capitalize()} Dataset")
     print(f"{'='*50}")
 
     if os.path.exists(dataset_path):
@@ -32,11 +41,29 @@ def load_data(dataset_path: str, dataset_split: str = "train") -> Dataset:
         print(f"Loading from HuggingFace: {dataset_path}")
         dataset = load_dataset(dataset_path, split=dataset_split)
 
-    print(f"Dataset loaded: {len(dataset)} examples")
+    print(f"{dataset_name.capitalize()} dataset loaded: {len(dataset)} examples")
     print(f"\nSample data (first example):")
     print(json.dumps(dataset[0], indent=2))
 
     return dataset
+
+
+def load_optional_data(dataset_path: str, dataset_name: str = "validation") -> Dataset | None:
+    """Load optional dataset (validation or test)
+
+    Args:
+        dataset_path: Path to dataset file
+        dataset_name: Name to display (e.g., "validation", "test")
+
+    Returns:
+        Dataset object or None if file doesn't exist
+    """
+    if not dataset_path or not os.path.exists(dataset_path):
+        print(f"\n{dataset_name.capitalize()} dataset not found at: {dataset_path or 'Not provided'}")
+        print(f"Skipping {dataset_name} dataset")
+        return None
+
+    return load_data(dataset_path, dataset_name=dataset_name)
 
 
 def get_chat_template(model_name: str, template_type: str = "auto") -> Dict[str, str]:

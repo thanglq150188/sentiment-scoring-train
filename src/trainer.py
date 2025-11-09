@@ -82,17 +82,37 @@ def train_model(
     dataset: Dataset,
     training_args: TrainingArguments,
     max_seq_length: int = 2048,
-    packing: bool = False
+    packing: bool = False,
+    eval_dataset: Dataset = None
 ):
-    """Train the model"""
+    """Train the model
+
+    Args:
+        model: The model to train
+        tokenizer: The tokenizer
+        dataset: Training dataset
+        training_args: Training arguments
+        max_seq_length: Maximum sequence length
+        packing: Whether to use sequence packing
+        eval_dataset: Optional evaluation/validation dataset
+    """
     print(f"\n{'='*50}")
     print("Starting Training")
     print(f"{'='*50}")
+
+    if eval_dataset is not None:
+        print(f"Using validation dataset with {len(eval_dataset)} examples")
+        # Enable evaluation during training
+        training_args.eval_strategy = "steps"
+        training_args.eval_steps = training_args.save_steps if training_args.save_strategy == "steps" else 500
+    else:
+        print("No validation dataset provided, skipping evaluation during training")
 
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
         train_dataset=dataset,
+        eval_dataset=eval_dataset,
         dataset_text_field="text",
         max_seq_length=max_seq_length,
         dataset_num_proc=2,
